@@ -1,0 +1,32 @@
+<html>
+<div id="chartContainer">
+  <script src="http://d3js.org/d3.v4.min.js"></script>
+  <script src="http://dimplejs.org/dist/dimple.v2.3.0.min.js"></script>
+  <script type="text/javascript">
+    var svg = dimple.newSvg("#chartContainer", 590, 400);
+    d3.csv("out.csv", function (data) {
+      data = dimple.filterData(data, "Year", ["2015", "2016"])
+
+      var frame = 2000;
+
+      var myChart = new dimple.chart(svg, data);
+      myChart.setBounds(70, 30, 340, 330);
+      var x = myChart.addCategoryAxis("x", ["Month"]);
+      
+      myChart.addPctAxis("y", ["Days"]);
+      var s = myChart.addSeries("category", dimple.plot.area);
+      s.lineWeight = 1;
+      //s.lineMarkers = true;
+      s.addOrderRule(["Good", "Moderate", "Unhealthy for Sensitive Groups", "Unhealthy", "Very Unhealthy", "Hazardous"]);
+      
+      myChart.addLegend(430, 20, 100, 300, "left");
+
+      // var story = myChart.setStoryboard("Year");
+      // story.frameDuration = frame;
+      
+
+      myChart.draw();
+    });
+  </script>
+</div>
+</html>
