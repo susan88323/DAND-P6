@@ -1,32 +1,170 @@
+<!DOCTYPE html>
 <html>
-<div id="chartContainer">
-  <script src="http://d3js.org/d3.v4.min.js"></script>
-  <script src="http://dimplejs.org/dist/dimple.v2.3.0.min.js"></script>
-  <script type="text/javascript">
-    var svg = dimple.newSvg("#chartContainer", 590, 400);
-    d3.csv("out.csv", function (data) {
-      data = dimple.filterData(data, "Year", ["2015", "2016"])
+<head>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v4.min.js"></script>
+    <script src="http://dimplejs.org/dist/dimple.v2.3.0.min.js"></script>
+    <style>
+        #title {
+            margin: 0px;
+            margin-left: 100px;
+            margin-top: 50px;
+            padding: 1px 0px;
+        }
+    </style>
+    <script type="text/javascript">
+        function draw(data) {
+            "use strict";
+            var title = d3.select("body")
+                .append("h2")
+                .attr('id', 'title')
+                .text('PM 2.5 of Beijing and Shanghai (2012 - 2016)');
 
-      var frame = 2000;
+            var svg = dimple.newSvg("body", 1400, 450);
 
-      var myChart = new dimple.chart(svg, data);
-      myChart.setBounds(70, 30, 340, 330);
-      var x = myChart.addCategoryAxis("x", ["Month"]);
-      
-      myChart.addPctAxis("y", ["Days"]);
-      var s = myChart.addSeries("category", dimple.plot.area);
-      s.lineWeight = 1;
-      //s.lineMarkers = true;
-      s.addOrderRule(["Good", "Moderate", "Unhealthy for Sensitive Groups", "Unhealthy", "Very Unhealthy", "Hazardous"]);
-      
-      myChart.addLegend(430, 20, 100, 300, "left");
+            var g = svg.append("g")
+                .attr("class", "main_chart");
+            // The main chart
+            var myChart = new dimple.chart(g, data);
+            myChart.setBounds(100, 80, 500, 330);
 
-      var story = myChart.setStoryboard("Year");
-      story.frameDuration = frame;
-      
+            var x = myChart.addCategoryAxis("x", "Year"); 
+            x.title = "Year";
+            var y = myChart.addMeasureAxis("y", "PM");
+            y.title = "PM 2.5 (ug/m^3)";
+            var lines = myChart.addSeries("City", dimple.plot.line);
+            myChart.addSeries("City", dimple.plot.scatter);
+            var myLegend = myChart.addLegend(100, 50, 400, "right");
 
-      myChart.draw();
-    });
-  </script>
-</div>
+            // Add us and china standard 
+            svg.append("line")
+                .attr("y1", 305)
+                .attr("y2", 305)
+                .attr("x1", 100)
+                .attr("x2", 600)
+                .style("stroke", "purple")
+                .style("stroke-dasharray", "8");
+
+            svg.append("text")
+                .attr("x", 440)
+                .attr("y", 300)
+                .style("font-family", "lato")
+                .style("font-size", "11px")
+                .style("font-weight", "400")
+                .text("China annual standard (35 ug/m^3)");
+
+            svg.append("line")
+                .attr("y1", 374)
+                .attr("y2", 374)
+                .attr("x1", 100)
+                .attr("x2", 600)
+                .style("stroke", "green")
+                .style("stroke-dasharray", "8");
+
+            svg.append("text")
+                .attr("x", 440)
+                .attr("y", 369)
+                .style("font-family", "lato")
+                .style("font-size", "11px")
+                .style("font-weight", "400")
+                .text("US annual standard (12 ug/m^3)");
+
+            myChart.draw();
+
+            // The right chart
+            d3.csv("out.csv", function(city_data) {
+                data = dimple.filterData(city_data, "city", "Beijing");
+
+                // Add title
+                svg.append("text")
+                .attr("x", 700)
+                .attr("y",60)
+                .style("font-family", "lato")
+                .style("font-size", "15px")
+                .style("font-weight", "400")
+                .style("color", "Black")
+                .text("Monthly air quality levels percentage based on PM 2.5 values of the highlighted city.");
+
+                var frame = 5000;
+
+                var side_chart = new dimple.chart(svg, data);
+                side_chart.setBounds(700, 100, 350, 310);
+                var x = side_chart.addCategoryAxis("x", "Month");
+
+                side_chart.addPctAxis("y", "Days");
+                var s = side_chart.addSeries("category", dimple.plot.bar);
+                s.addOrderRule(["Good", "Moderate", "Unhealthy for Sensitive Groups", "Unhealthy", "Very Unhealthy", "Hazardous"]);
+
+                side_chart.addLegend(1150, 100, 100, 300, "right");
+                side_chart.defaultColors = [
+                    new dimple.color("#00E400"),
+                    new dimple.color("#FFFF00"),
+                    new dimple.color("#FF7E00"),
+                    new dimple.color("#FF0000"),
+                    new dimple.color("#99004C"),
+                    new dimple.color("#4C0026")
+                ]; 
+
+                var story = side_chart.setStoryboard("Year");
+                story.frameDuration = frame;
+                story.addOrderRule("Year", false);
+
+                side_chart.draw();
+
+                side_chart.legends = [];
+                story.storyLabel.style("font-size", "14px");
+
+                // Highlight line of Beijing
+                g.select("path#dimple-beijing")
+                    .style('stroke-width', '8px')
+                    .style('opacity', 1)
+                    .attr('z-index', '1');
+
+                g.selectAll('.dimple-line')
+                    .on('mouseover', function(e) {
+                        var city = d3.select(this).attr('id').split('-')[1];
+                        //debugger;
+                        city = city.capitalizeFirstLetter();
+                        if (city) {
+                            // Remove highlight on line of Beijing
+                            g.selectAll('.dimple-line')
+                                .style('stroke-width', '2px')
+                                .style('opacity', 0.5)
+                                .attr('z-index', '0');
+                            // Highlight selected line
+                            d3.select(this)
+                                .style('stroke-width', '8px')
+                                .style('opacity', 1)
+                                .attr('z-index', '1');
+                            side_chart.data = dimple.filterData(city_data, "city", city);
+                            side_chart.draw(1000);
+                        };
+                    });
+            });
+
+            var ref = d3.select("body")
+                .append("div")
+                .attr('id', 'ref')
+                .style('position', 'relative')
+                .style('left', '100px')
+                .style("font-family", "lato")
+                .style("font-size", "16px")
+                .style("font-weight", "400")
+                .style("color", "Black")
+                .text('Note: Air quality levels are defined ')
+                .append("a")
+                .attr('href', 'http://www.stateair.net/web/post/1/1.html')
+                .text('here.');
+
+            String.prototype.capitalizeFirstLetter = function() {
+                return this.charAt(0).toUpperCase() + this.slice(1);
+            };
+        };
+    </script>
+</head>
+<body>
+    <script type="text/javascript">
+        d3.csv("summary.csv", draw);
+    </script>
+</body>
 </html>
