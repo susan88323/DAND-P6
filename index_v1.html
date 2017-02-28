@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+
+    .bar {
+      fill: steelblue;
+    }
+
+    .axis path {
+      display: none;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+  </style>
+  <meta charset="utf-8">
+  <script src="http://d3js.org/d3.v4.min.js"></script>
+  <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+    <script type="text/javascript">
+      function draw(error, data) {
+        if (error) throw error;
+
+      /*
+        D3.js setup code
+      */
+          "use strict";
+          var margin = {top: 20, right: 60, bottom: 30, left: 40},
+              width = 1400 - margin.left - margin.right,
+              height = 600 - margin.top - margin.bottom;
+
+          d3.select("body")
+            .append("h2")
+            .text("Beijing PM2.5");
+
+          var svg = d3.select("body")
+            .append("svg")
+              .attr("width", width + margin.left + margin.right)
+              .attr("height", height + margin.top + margin.bottom);
+
+          var g = svg.append("g")
+              .attr('class','chart')
+              .attr("transform", "translate(" + margin.left + "," + (margin.top) + ")");
+
+          var x = d3.scaleBand()
+            .rangeRound([0, width-150])
+            .padding(0.1)
+            .align(0.1);
+
+          var y = d3.scaleLinear()
+            .rangeRound([height, 0]);
+
+          var z = d3.scaleOrdinal()
+            .range(["#98abc5", "#8a89a6", "#6b486b", "#a05d56", "#d0743c", "#ff8c00"]);
+
+          var stack = d3.stack()
+            .offset(d3.stackOffsetExpand);
+
+          var keys = data.columns.slice(1);
+
+          x.domain(data.map(function(d) { return d.Month; }));
+          z.domain(keys);
+
+          var serie = g.selectAll(".serie")
+            .data(stack.keys(keys)(data))
+            .enter().append("g")
+            .attr("class", "serie")
+            .attr("fill", function(d) { return z(d.key); });
+
+          serie.selectAll("rect")
+            .data(function(d) { return d; })
+            .enter().append("rect")
+            .attr("x", function(d) { return x(d.data.Month); })
+            .attr("y", function(d) { return y(d[1]); })
+            .attr("height", function(d) { return y(d[0]) - y(d[1]); })
+            .attr("width", x.bandwidth());
+
+          g.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x));
+
+          g.append("g")
+            .attr("class", "axis axis--y")
+            .call(d3.axisLeft(y).ticks(10, "%"));
+
+          var legend = g.append("g")
+            .attr("font-family", "sans-serif")
+            .attr("font-size", 12)
+            .attr("text-anchor", "start")
+            .selectAll("g")
+            .data(keys.slice().reverse())
+            .enter().append("g")
+            .attr("transform", function(d, i) { return "translate(0," + i * 21 + ")"; });
+
+          legend.append("rect")
+            .attr("x", width - 150)
+            .attr("width", 20)
+            .attr("height", 20)
+            .attr("fill", z);
+
+          legend.append("text")
+            .attr("x", width - 120)
+            .attr("y", 9.5)
+            .attr("dy", "0.32em")
+            .text(function(d) { return d; });
+        };
+
+        function type(d, i, columns) {
+          for (i = 1, t = 0; i < columns.length; ++i) 
+            t += d[columns[i]] = +d[columns[i]];
+            d.total = t;
+          return d;
+        };
+      </script>
+  </head>
+<body>
+  <script type="text/javascript">
+  /*
+    Use D3 (not dimple.js) to load the TSV file
+    and pass the contents of it to the draw function
+    */
+    d3.csv("out_1.csv", type, draw);
+  </script>
+</body>
+</html>
