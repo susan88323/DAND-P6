@@ -64,21 +64,26 @@
           z.domain(keys);
 
           // data.forEach(function(d) {
-          //   debugger;
           //   var mydate = d.Month; //add to stock code
           //   d.ages = z.domain().map(function(name) { return {mydate:mydate, name: name}; });
           // });
+          var new_data = stack.keys(keys)(data);
+          new_data.forEach(function(d) {
+            var key = d.key;
+            d.forEach(function(d_rect) {
+                d_rect.key = key;
+            });
+          });
 
           var serie = g.selectAll(".serie")
-            .data(stack.keys(keys)(data))
+            .data(new_data)
             .enter().append("g")
             .attr("class", "serie")
             .attr("fill", function(d) { return z(d.key); });
 
           serie.selectAll("rect")
-            .data(function(d) { debugger; return d; })
+            .data(function(d) { return d; })
             .enter().append("rect")
-            .attr("level", function(d) { return d.key })
             .attr("x", function(d) { return x(d.data.Month); })
             .attr("y", function(d) { return y(d[1]); })
             .attr("height", function(d) { return y(d[0]) - y(d[1]); })
@@ -90,8 +95,6 @@
               var xPos = parseFloat(d3.select(this).attr("x"));
               var yPos = parseFloat(d3.select(this).attr("y"));
               var height = parseFloat(d3.select(this).attr("height"));
-              var level = d3.select(this).attr("level");
-              debugger;
 
               d3.select(this).attr("stroke","blue").attr("stroke-width",0.8);
 
@@ -99,7 +102,7 @@
                 .attr("x",xPos)
                 .attr("y",yPos +height/2)
                 .attr("class","tooltip")
-                .text(d["name"] + ":" + delta); 
+                .text(d.key + ":" + delta); 
               //debugger;
             })
             .on("mouseout",function(){
