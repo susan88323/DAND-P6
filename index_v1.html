@@ -63,6 +63,12 @@
           x.domain(data.map(function(d) { return d.Month; }));
           z.domain(keys);
 
+          // data.forEach(function(d) {
+          //   debugger;
+          //   var mydate = d.Month; //add to stock code
+          //   d.ages = z.domain().map(function(name) { return {mydate:mydate, name: name}; });
+          // });
+
           var serie = g.selectAll(".serie")
             .data(stack.keys(keys)(data))
             .enter().append("g")
@@ -70,12 +76,37 @@
             .attr("fill", function(d) { return z(d.key); });
 
           serie.selectAll("rect")
-            .data(function(d) { return d; })
+            .data(function(d) { debugger; return d; })
             .enter().append("rect")
+            .attr("level", function(d) { return d.key })
             .attr("x", function(d) { return x(d.data.Month); })
             .attr("y", function(d) { return y(d[1]); })
             .attr("height", function(d) { return y(d[0]) - y(d[1]); })
             .attr("width", x.bandwidth());
+
+          serie.selectAll("rect")
+            .on("mouseover", function(d){
+              var delta = d[1] - d[0];
+              var xPos = parseFloat(d3.select(this).attr("x"));
+              var yPos = parseFloat(d3.select(this).attr("y"));
+              var height = parseFloat(d3.select(this).attr("height"));
+              var level = d3.select(this).attr("level");
+              debugger;
+
+              d3.select(this).attr("stroke","blue").attr("stroke-width",0.8);
+
+              svg.append("text")
+                .attr("x",xPos)
+                .attr("y",yPos +height/2)
+                .attr("class","tooltip")
+                .text(d["name"] + ":" + delta); 
+              //debugger;
+            })
+            .on("mouseout",function(){
+              svg.select(".tooltip").remove();
+              d3.select(this).attr("stroke","pink").attr("stroke-width",0.2);
+                                
+        })
 
           g.append("g")
             .attr("class", "axis axis--x")
