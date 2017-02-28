@@ -11,6 +11,13 @@
             margin-top: 50px;
             padding: 1px 0px;
         }
+
+        #description {
+            margin: 0px;
+            margin-left: 100px;
+            margin-top: 5px;
+            padding: 1px 0px;
+        }
     </style>
     <script type="text/javascript">
         function draw(data) {
@@ -19,6 +26,10 @@
                 .append("h2")
                 .attr('id', 'title')
                 .text('PM 2.5 of Beijing and Shanghai (2012 - 2016)');
+            var description = d3.select("body")
+                .append("p")
+                .attr('id', 'description')
+                .text('China suffers from bad air quality during recent years, especially for cities along eastern coast in winter season. The air quality has been improved slowly since 2013. We present the air quality changes in two major cities, Beijing and Shanghai.   Hover on lines to show monthly air quality levels percentage in the side chard.');
 
             var svg = dimple.newSvg("body", 1400, 450);
 
@@ -71,8 +82,9 @@
 
             myChart.draw();
 
-            // The right chart
+            // The side chart
             d3.csv("out.csv", function(city_data) {
+                // By default, show the data of Beijing
                 data = dimple.filterData(city_data, "city", "Beijing");
 
                 // Add title
@@ -90,12 +102,14 @@
                 var side_chart = new dimple.chart(svg, data);
                 side_chart.setBounds(700, 100, 350, 310);
                 var x = side_chart.addCategoryAxis("x", "Month");
+                x.addOrderRule("Month");
 
                 side_chart.addPctAxis("y", "Days");
                 var s = side_chart.addSeries("category", dimple.plot.bar);
                 s.addOrderRule(["Good", "Moderate", "Unhealthy for Sensitive Groups", "Unhealthy", "Very Unhealthy", "Hazardous"]);
 
-                side_chart.addLegend(1150, 100, 100, 300, "right");
+                var sideLegend = side_chart.addLegend(1150, 100, 100, 300, "right");
+                // Customize the colors of side chart
                 side_chart.defaultColors = [
                     new dimple.color("#00E400"),
                     new dimple.color("#FFFF00"),
@@ -105,6 +119,25 @@
                     new dimple.color("#4C0026")
                 ]; 
 
+                // Reorder sode chart legend
+                sideLegend._getEntries = function() {
+                    var orderedValues = ["Hazardous", "Very Unhealthy", "Unhealthy", "Unhealthy for Sensitive Groups", "Moderate", "Good"];
+                    var entries = [];
+                    orderedValues.forEach(function(v) {
+                        entries.push({
+                            key : v,
+                            fill : side_chart.getColor(v).fill,
+                            stroke : side_chart.getColor(v).stroke,
+                            opacity : side_chart.getColor(v).opacity,
+                            series : s,
+                            aggField : [v]
+                        });
+                    }, this);
+
+                    return entries;
+                };
+
+                // Add animation based on years
                 var story = side_chart.setStoryboard("Year");
                 story.frameDuration = frame;
                 story.addOrderRule("Year", false);
@@ -114,12 +147,13 @@
                 side_chart.legends = [];
                 story.storyLabel.style("font-size", "14px");
 
-                // Highlight line of Beijing
+                // By default, highlight line of Beijing
                 g.select("path#dimple-beijing")
                     .style('stroke-width', '8px')
                     .style('opacity', 1)
                     .attr('z-index', '1');
 
+                // When mouseover, change highlighted line
                 g.selectAll('.dimple-line')
                     .on('mouseover', function(e) {
                         var city = d3.select(this).attr('id').split('-')[1];
@@ -141,7 +175,8 @@
                         };
                     });
             });
-
+            
+            // Add reference
             var ref = d3.select("body")
                 .append("div")
                 .attr('id', 'ref')
@@ -156,6 +191,8 @@
                 .attr('href', 'http://www.stateair.net/web/post/1/1.html')
                 .text('here.');
 
+            // Helper function
+            // Capitalize the first letter of a string
             String.prototype.capitalizeFirstLetter = function() {
                 return this.charAt(0).toUpperCase() + this.slice(1);
             };
